@@ -24,6 +24,7 @@ UI 스킨은 [GolaCSS](https://github.com/Muffler-2597/GolaCSS)를 CDN(`@master`
 - **나눔손글씨 암스테르담** (`NanumAmSeuTeReuDam.woff2`): 네이버 나눔글꼴 (SIL Open Font License 1.1). https://github.com/fonts-archive/NanumAmSeuTeReuDam
 - **Celestial_Idle.gif**: Nullscape (Roblox) 게임 에셋. https://nullscape.wiki/The_Celestial — 권리는 Nullscape 팀에 있음. 팬 사용.
 - **MartSlideAnimation.gif**: Nullscape (Roblox) 게임 에셋 — 권리는 Nullscape 팀에 있음. 팬 사용.
+- **Celedeath.png**: Nullscape (Roblox) 팬 에셋 — 권리는 Nullscape 팀에 있음. 팬 사용.
 - **letter-sway 텍스트 효과**: nullscape.wiki의 Template:Boss/styles.css + MediaWiki:Common.js를 참고/이식.
 - **omggif** (GIF 디코더): Dean McNamee, MIT License. https://github.com/deanm/omggif
 - **gifenc** (GIF 인코더): Matt Desl, MIT License. https://github.com/mattdesl/gifenc

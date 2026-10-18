@@ -10,6 +10,7 @@
 <script src="gifenc-bundle.js"></script>
 <script src="gif-data.js?v=20261018b"></script>
 <script src="gif-data-mart.js?v=20261018b"></script>
+<script src="gif-data-celedeath.js"></script>
 <style>
   @keyframes letter-sway {
     0% { transform: translateY(3%) rotate(-5deg); }
@@ -31,6 +32,7 @@
   #stage { width: min(700px, 90vw); max-width: 90vw; min-height: 220px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 32px 24px; box-sizing: border-box; border: 1px dashed #555; background-image: linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%), linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%); background-size: 24px 24px; background-position: 0 0, 12px 12px; }
   #stage.light { background: #fff; background-image: none; border-style: solid; border-color: #333; }
   #idle { max-width: 100%; height: auto; }
+  #idle.sway { animation-name: letter-sway; animation-duration: 5s; animation-timing-function: cubic-bezier(0.37,0,0.63,1); animation-iteration-count: infinite; }
   #preview { font-family: 'OMORI_GAME2 Regular', 'NanumAmSeuTeReuDam', sans-serif; font-weight: normal; color: #FF5298; font-size: 64px; line-height: 1.5; text-align: center; word-break: break-word; white-space: pre-line; }
   .hoveringLetters { display: inline-block; transform-origin: center; position: relative; animation-name: letter-sway; animation-duration: 5s; animation-timing-function: cubic-bezier(0.37,0,0.63,1); animation-iteration-count: infinite; }
   .hoverLettersWord { white-space: nowrap; }
@@ -38,11 +40,7 @@
   .btnrow { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
   button.gola-btn { width: auto; min-width: 170px; padding: 0 18px; font-family: inherit; }
   button.gola-btn:disabled { opacity: 0.5; cursor: wait; }
-  .moderow { display: flex; gap: 8px; align-items: center; }
-  .moderow .gola-switch { width: 42px; height: 24px; }
-  .moderow .gola-knob { width: 12px; height: 18px; top: 3px; left: 4.5px; }
-  .moderow .gola-check:checked + .gola-switch .gola-knob { left: 25.5px; }
-  .moderow .gola-label { font-size: 18px; }
+  .moderow { display: flex; gap: 14px; align-items: center; }
   #msg { margin-top: 8px; font-size: 16px; opacity: 0.7; min-height: 20px; text-align: center; }
 </style>
 </head>
@@ -53,7 +51,7 @@
   <label>Size <input id="size" type="range" min="24" max="200" value="64" /> <span id="sizeVal">64px</span></label>
   <label>Color <input id="color" type="color" value="#FF5298" /></label>
   <label><input id="bgToggle" type="checkbox" /> light background</label>
-  <span class="moderow"><input type="checkbox" class="gola-check" id="martToggle" aria-label="Mart mode" /><label class="gola-switch" for="martToggle"><span class="gola-knob"></span></label><span class="gola-label" id="modeLabel">Celestial</span></span>
+  <span class="moderow"><label><input type="radio" name="mode" class="gola-radio" value="celestial" checked /> Celestial</label><label><input type="radio" name="mode" class="gola-radio" value="mart" /> Mart</label><label><input type="radio" name="mode" class="gola-radio" value="celedeath" /> Celedeath</label></span>
   <label>Width <input id="textWidth" type="range" min="200" max="1200" value="650" /> <span id="textWidthVal">650px</span></label>
   <label>Sprite <input id="spriteSize" type="range" min="120" max="650" value="280" /> <span id="spriteSizeVal">280px</span></label>
 </div>
@@ -97,15 +95,28 @@
   const FONT = '"OMORI_GAME2 Regular", "NanumAmSeuTeReuDam", sans-serif';
   const MODES = {
     celestial: { color: '#FF5298', label: 'Celestial', file: 'celestial' },
-    mart: { color: '#67cee9', label: 'Mart', file: 'mart' }
+    mart: { color: '#67cee9', label: 'Mart', file: 'mart' },
+    celedeath: { color: '#FFFFFF', label: 'Celedeath', file: 'celedeath', static: true }
   };
   let mode = 'celestial';
-  const martToggle = document.getElementById('martToggle');
-  const modeLabel = document.getElementById('modeLabel');
+  const modeRadios = [...document.querySelectorAll('input[name="mode"]')];
   const idleImg = document.getElementById('idle');
   function spriteB64() { return mode === 'mart' ? window.MART_GIF_B64 : window.CELESTIAL_GIF_B64; }
+  function spriteDataURL() {
+    if (mode === 'celedeath') return 'data:image/png;base64,' + window.CELEDEATH_PNG_B64;
+    return 'data:image/gif;base64,' + spriteB64();
+  }
+  function setMode(m) {
+    if (!MODES[m]) return;
+    mode = m;
+    idleImg.classList.toggle('sway', m === 'celedeath');
+    setIdle();
+    color.value = MODES[mode].color;
+    preview.style.color = MODES[mode].color;
+    for (const r of modeRadios) r.checked = (r.value === m);
+  }
   function setIdle() {
-    idleImg.src = 'data:image/gif;base64,' + spriteB64();
+    idleImg.src = spriteDataURL();
     idleImg.alt = MODES[mode].label + ' idle';
     applySpriteSize();
   }
@@ -204,20 +215,12 @@
   bgToggle.addEventListener('change', () => {
     stage.classList.toggle('light', bgToggle.checked);
   });
-  martToggle.addEventListener('change', () => {
-    mode = martToggle.checked ? 'mart' : 'celestial';
-    setIdle();
-    color.value = MODES[mode].color;
-    preview.style.color = MODES[mode].color;
-    modeLabel.textContent = MODES[mode].label;
-  });
+  for (const r of modeRadios) r.addEventListener('change', () => setMode(r.value));
   textWidth.addEventListener('input', applyTextWidth);
   spriteSize.addEventListener('input', applySpriteSize);
   try {
-    if (new URLSearchParams(location.search).get('mode') === 'mart') {
-      martToggle.checked = true;
-      martToggle.dispatchEvent(new Event('change'));
-    }
+    const mm = new URLSearchParams(location.search).get('mode');
+    if (mm) setMode(mm);
   } catch (e) {}
   try {
     const saved = localStorage.getItem('csg-text');
@@ -398,24 +401,41 @@
     try {
       msg.textContent = 'Decoding sprite...';
       await tick();
-      const b64 = spriteB64();
-      if (!b64) throw new Error(MODES[mode].label + ' sprite missing (gif-data file failed to load?)');
-      const bin = atob(b64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const reader = new GifReader(bytes);
-      const gw = reader.width, gh = reader.height, nf = reader.numFrames();
-      const delays = [];
-      for (let i = 0; i < nf; i++) delays.push(Math.max(20, reader.frameInfo(i).delay * 10));
+      let gw, gh, nf, delays, sprites;
+      if (MODES[mode].static) {
+        const pb64 = window.CELEDEATH_PNG_B64;
+        if (!pb64) throw new Error('Celedeath sprite missing (gif-data-celedeath.js failed to load?)');
+        const img = new Image();
+        img.src = 'data:image/png;base64,' + pb64;
+        await img.decode();
+        gw = img.naturalWidth; gh = img.naturalHeight;
+        const pc = document.createElement('canvas');
+        pc.width = gw; pc.height = gh;
+        pc.getContext('2d').drawImage(img, 0, 0);
+        sprites = [pc.getContext('2d').getImageData(0, 0, gw, gh)];
+        nf = 1;
+        delays = [50];
+      } else {
+        const b64 = spriteB64();
+        if (!b64) throw new Error(MODES[mode].label + ' sprite missing (gif-data file failed to load?)');
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const reader = new GifReader(bytes);
+        gw = reader.width; gh = reader.height; nf = reader.numFrames();
+        delays = [];
+        for (let i = 0; i < nf; i++) delays.push(Math.max(20, reader.frameInfo(i).delay * 10));
+        sprites = [];
+        for (let i = 0; i < nf; i++) {
+          const px = new Uint8ClampedArray(gw * gh * 4);
+          reader.decodeAndBlitFrameRGBA(i, px);
+          sprites.push(new ImageData(px, gw, gh));
+        }
+      }
       const loopMs = delays.reduce((a, b) => a + b, 0);
       let loops = 1;
-      while (((loops * loopMs) % 5000) > 1 && loops < 8) loops++;
-      const sprites = [];
-      for (let i = 0; i < nf; i++) {
-        const px = new Uint8ClampedArray(gw * gh * 4);
-        reader.decodeAndBlitFrameRGBA(i, px);
-        sprites.push(new ImageData(px, gw, gh));
-      }
+      if (MODES[mode].static) loops = 100;
+      else while (((loops * loopMs) % 5000) > 1 && loops < 8) loops++;
       const spriteCanvases = sprites.map(img => {
         const c = document.createElement('canvas');
         c.width = gw; c.height = gh;
@@ -468,10 +488,21 @@
         frameDelays.push(delays[f % nf]);
         t += delays[f % nf];
       }
+      const swaySprite = !!MODES[mode].static;
       function renderFrame(f) {
         ctx.clearRect(0, 0, W, H);
         krCtx.clearRect(0, 0, W, H);
-        ctx.drawImage(spriteCanvases[f % nf], spriteX, pad, spriteW, spriteH);
+        if (swaySprite) {
+          const sp = (((frameTimes[f] / 1000) % SWAY_PERIOD) + SWAY_PERIOD) % SWAY_PERIOD / SWAY_PERIOD;
+          const soff = swayAt(sp);
+          ctx.save();
+          ctx.translate(spriteX + spriteW / 2, pad + spriteH / 2 + soff[0] / 100 * spriteH);
+          ctx.rotate(soff[1] * Math.PI / 180);
+          ctx.drawImage(spriteCanvases[f % nf], -spriteW / 2, -spriteH / 2, spriteW, spriteH);
+          ctx.restore();
+        } else {
+          ctx.drawImage(spriteCanvases[f % nf], spriteX, pad, spriteW, spriteH);
+        }
         drawSwayText(ctx, krCtx, layouts, frameTimes[f] / 1000, fontSize, textCX, textTop, lineHeight);
         ctx.save();
         ctx.filter = 'url(#roughenExp)';
