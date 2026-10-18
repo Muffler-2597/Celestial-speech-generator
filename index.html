@@ -28,12 +28,12 @@
   .controls label { display: flex; gap: 8px; align-items: center; }
   input[type="range"] { accent-color: #FF5298; }
   input[type="color"] { width: 36px; height: 24px; border: none; padding: 0; background: none; cursor: pointer; }
-  #stage { width: min(700px, 90vw); min-height: 220px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 32px 24px; box-sizing: border-box; border: 1px dashed #555; background-image: linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%), linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%); background-size: 24px 24px; background-position: 0 0, 12px 12px; }
+  #stage { width: min(700px, 90vw); max-width: 90vw; min-height: 220px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 32px 24px; box-sizing: border-box; border: 1px dashed #555; background-image: linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%), linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%); background-size: 24px 24px; background-position: 0 0, 12px 12px; }
   #stage.light { background: #fff; background-image: none; border-style: solid; border-color: #333; }
   #idle { max-width: 100%; height: auto; }
   #preview { font-family: 'OMORI_GAME2 Regular', 'NanumAmSeuTeReuDam', sans-serif; font-weight: normal; color: #FF5298; font-size: 64px; line-height: 1.5; text-align: center; word-break: break-word; white-space: pre-line; }
   .hoveringLetters { display: inline-block; transform-origin: center; position: relative; animation-name: letter-sway; animation-duration: 5s; animation-timing-function: cubic-bezier(0.37,0,0.63,1); animation-iteration-count: infinite; }
-  .hoverLettersWord { white-space: normal; overflow-wrap: anywhere; }
+  .hoverLettersWord { white-space: nowrap; }
   .hoveringLetters.kr { filter: url(#roughen); }
   .btnrow { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
   button.gola-btn { width: auto; min-width: 170px; padding: 0 18px; font-family: inherit; }
@@ -112,25 +112,71 @@
   function applySpriteSize() {
     idleImg.style.width = spriteSize.value + 'px';
     spriteSizeVal.textContent = spriteSize.value + 'px';
+    applyStageWidth();
   }
   function applyTextWidth() {
     preview.style.maxWidth = textWidth.value + 'px';
     textWidthVal.textContent = textWidth.value + 'px';
+    applyStageWidth();
+    renderPreview();
+  }
+  function applyStageWidth() {
+    const w = Math.max(700, parseInt(textWidth.value, 10) + 50, parseInt(spriteSize.value, 10) + 50);
+    stage.style.width = w + 'px';
   }
   setIdle();
 
+  const breakMeas = document.createElement('canvas').getContext('2d');
+  function breakLines(raw, fontPx, maxW) {
+    breakMeas.font = fontPx + 'px ' + FONT;
+    const SPACE = breakMeas.measureText(' ').width;
+    const strW = (s) => {
+      let t = 0;
+      const cps = Array.from(s);
+      for (let k = 0; k < cps.length; k++) t += breakMeas.measureText(cps[k]).width;
+      return t;
+    };
+    const lines = [];
+    const paras = (raw || ' ').split('\n');
+    for (let pi = 0; pi < paras.length; pi++) {
+      const words = paras[pi].split(' ').filter(w => w.length);
+      const toks = [];
+      for (let qi = 0; qi < words.length; qi++) {
+        const word = words[qi];
+        if (strW(word) <= maxW) { toks.push(word); continue; }
+        let cur = '';
+        const wc = Array.from(word);
+        for (let k = 0; k < wc.length; k++) {
+          const t = cur + wc[k];
+          if (strW(t) > maxW && cur) { toks.push(cur); cur = wc[k]; }
+          else cur = t;
+        }
+        if (cur) toks.push(cur);
+      }
+      if (!toks.length) { lines.push([]); continue; }
+      let line = [], lw = 0;
+      for (let ti = 0; ti < toks.length; ti++) {
+        const twd = strW(toks[ti]);
+        const need = line.length ? lw + SPACE + twd : twd;
+        if (need > maxW && line.length) { lines.push(line); line = [toks[ti]]; lw = twd; }
+        else { line.push(toks[ti]); lw = need; }
+      }
+      if (line.length) lines.push(line);
+    }
+    return lines;
+  }
   function renderPreview() {
     const raw = text.value || ' ';
+    const lines = breakLines(raw, parseInt(size.value, 10), parseInt(textWidth.value, 10));
     preview.replaceChildren();
-    raw.split('\n').forEach((line, li) => {
+    lines.forEach((toks, li) => {
       if (li > 0) preview.appendChild(document.createElement('br'));
-      if (!line) return;
-      line.split(' ').forEach((word, wi) => {
-        if (wi > 0) preview.appendChild(document.createTextNode(' '));
-        if (!word) return;
+      if (!toks.length) return;
+      toks.forEach((tok, ti) => {
+        if (ti > 0) preview.appendChild(document.createTextNode(' '));
         const w = document.createElement('span');
         w.className = 'hoverLettersWord';
-        Array.from(word).forEach((ch, i) => {
+        Array.from(tok).forEach((ch, i) => {
           const s = document.createElement('span');
           s.className = 'hoveringLetters' + (isHangeul(ch) ? ' kr' : '');
           s.style.animationDelay = '-' + i + 's';
@@ -142,11 +188,15 @@
     });
   }
 
-  text.addEventListener('input', renderPreview);
+  text.addEventListener('input', () => {
+    try { localStorage.setItem('csg-text', text.value); } catch (e) {}
+    renderPreview();
+  });
   size.addEventListener('input', () => {
     preview.style.fontSize = size.value + 'px';
     sizeVal.textContent = size.value + 'px';
     updateRough(parseInt(size.value, 10));
+    renderPreview();
   });
   color.addEventListener('input', () => {
     preview.style.color = color.value;
@@ -169,8 +219,13 @@
       martToggle.dispatchEvent(new Event('change'));
     }
   } catch (e) {}
+  try {
+    const saved = localStorage.getItem('csg-text');
+    if (saved !== null) text.value = saved;
+  } catch (e) {}
   renderPreview();
   applyTextWidth();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => renderPreview());
 
   function download(blob, filename) {
     const a = document.createElement('a');
@@ -218,10 +273,10 @@
     } catch (e) {}
 
     const lineHeight = fontSize * 1.5;
-    const pad = Math.ceil(fontSize * 0.4);
+    const pad = 32;
     const meas = document.createElement('canvas').getContext('2d');
     meas.font = (fontSize * SCALE) + 'px ' + FONT;
-    const lines = wrapLines(raw, meas, parseInt(textWidth.value, 10) * SCALE);
+    const lines = breakLines(raw, fontSize, parseInt(textWidth.value, 10)).map(t => t.join(' '));
     let maxW = 0;
     for (const line of lines) {
       const w = meas.measureText(line || ' ').width;
@@ -300,35 +355,12 @@
     }
   }
 
-  function wrapLines(raw, ctx, maxW) {
-    const out = [];
-    for (const para of raw.split('\n')) {
-      const words = para.split(' ').filter(w => w.length);
-      if (!words.length) { out.push(''); continue; }
-      let line = '';
-      const pushWord = (w) => {
-        while (ctx.measureText(w).width > maxW && w.length > 1) {
-          let cut = w.length - 1;
-          while (cut > 1 && ctx.measureText(w.slice(0, cut)).width > maxW) cut--;
-          if (line) { out.push(line); line = ''; }
-          out.push(w.slice(0, cut));
-          w = w.slice(cut);
-        }
-        const trial = line ? line + ' ' + w : w;
-        if (ctx.measureText(trial).width > maxW && line) { out.push(line); line = w; }
-        else line = trial;
-      };
-      words.forEach(pushWord);
-      out.push(line);
-    }
-    return out;
-  }
 
   function layoutLine(line, ctx) {
     const spaceW = ctx.measureText(' ').width;
     const chars = [];
     let x = 0;
-    line.split(' ').forEach((word, wpos) => {
+    line.split(' ').filter(w => w.length).forEach((word, wpos) => {
       if (wpos > 0) x += spaceW;
       Array.from(word).forEach((ch, wi) => {
         const w = ctx.measureText(ch).width;
@@ -404,11 +436,11 @@
       const spriteW = spritePx;
       const spriteH = Math.round(gh * spritePx / gw);
       const textWrapW = parseInt(textWidth.value, 10);
-      const lines = wrapLines(text.value || ' ', meas, textWrapW);
+      const lines = breakLines(text.value || ' ', fontSize, textWrapW).map(t => t.join(' '));
       const layouts = lines.map(l => layoutLine(l, meas));
       const lineHeight = fontSize * 1.5;
-      const gap = Math.round(fontSize * 0.4);
-      const pad = 24;
+      const gap = 8;
+      const pad = 32;
       const W = Math.max(spriteW, textWrapW) + pad * 2;
       const H = Math.ceil(pad + spriteH + gap + lineHeight * lines.length + pad);
       const textCX = W / 2, textTop = pad + spriteH + gap;
