@@ -8,8 +8,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Muffler-2597/GolaCSS@master/gola.css" />
 <script src="omggif.js"></script>
 <script src="gifenc-bundle.js"></script>
-<script src="gif-data.js"></script>
-<script src="gif-data-mart.js"></script>
+<script src="gif-data.js?v=20261018b"></script>
+<script src="gif-data-mart.js?v=20261018b"></script>
 <style>
   @keyframes letter-sway {
     0% { transform: translateY(3%) rotate(-5deg); }
@@ -39,6 +39,10 @@
   button.gola-btn { width: auto; min-width: 170px; padding: 0 18px; font-family: inherit; }
   button.gola-btn:disabled { opacity: 0.5; cursor: wait; }
   .moderow { display: flex; gap: 8px; align-items: center; }
+  .moderow .gola-switch { width: 42px; height: 24px; }
+  .moderow .gola-knob { width: 12px; height: 18px; top: 3px; left: 4.5px; }
+  .moderow .gola-check:checked + .gola-switch .gola-knob { left: 25.5px; }
+  .moderow .gola-label { font-size: 18px; }
   #msg { margin-top: 8px; font-size: 16px; opacity: 0.7; min-height: 20px; text-align: center; }
 </style>
 </head>
@@ -97,6 +101,7 @@
   function setIdle() {
     idleImg.src = 'data:image/gif;base64,' + spriteB64();
     idleImg.alt = MODES[mode].label + ' idle';
+    idleImg.style.width = mode === 'mart' ? '260px' : '';
   }
   setIdle();
 
