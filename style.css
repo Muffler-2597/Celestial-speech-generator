@@ -6,3 +6,13 @@
     font-weight: normal;
     src: local('OMORI_GAME2 Regular'), url('OMORI_GAME.woff') format('woff');
     }
+
+    @font-face {
+    font-family: 'NanumAmSeuTeReuDam';
+    font-style: normal;
+    font-weight: normal;
+    font-display: swap;
+    size-adjust: 102%;
+    unicode-range: U+1100-11FF, U+3130-318F, U+AC00-D7A3, U+FFA0-FFDC;
+    src: url('NanumAmSeuTeReuDam.woff2') format('woff2');
+    }

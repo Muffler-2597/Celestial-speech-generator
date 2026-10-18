@@ -4,10 +4,12 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Celestial speech generator</title>
-<link rel="stylesheet" type="text/css" href="style.css" />
+<link rel="stylesheet" type="text/css" href="style.css?v=20261018kr" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Muffler-2597/GolaCSS@master/gola.css" />
 <script src="omggif.js"></script>
 <script src="gifenc-bundle.js"></script>
 <script src="gif-data.js"></script>
+<script src="gif-data-mart.js"></script>
 <style>
   @keyframes letter-sway {
     0% { transform: translateY(3%) rotate(-5deg); }
@@ -16,7 +18,9 @@
     75% { transform: translateY(-3%); }
     100% { transform: translateY(3%) rotate(-5deg); }
   }
-  body { margin: 0; font-family: 'OMORI_GAME2 Regular', sans-serif; background: #111; color: #eee; display: flex; flex-direction: column; align-items: center; padding: 32px 16px; min-height: 100vh; box-sizing: border-box; }
+  body { margin: 0; font-family: 'OMORI_GAME2 Regular', 'NanumAmSeuTeReuDam', sans-serif; background: #111; color: #eee; display: flex; flex-direction: column; align-items: center; padding: 32px 16px; min-height: 100vh; box-sizing: border-box; }
+  body, body * { font-family: 'OMORI_GAME2 Regular', 'NanumAmSeuTeReuDam', sans-serif !important; }
+  input, textarea { user-select: text !important; }
   h1 { font-size: 28px; font-weight: normal; opacity: 0.9; }
   h1 b { color: #FF5298; }
   #text { width: min(700px, 90vw); padding: 12px 16px; font-size: 20px; font-family: inherit; border-radius: 8px; border: 2px solid #FF5298; background: #000; color: #fff; outline: none; resize: vertical; }
@@ -26,32 +30,47 @@
   input[type="color"] { width: 36px; height: 24px; border: none; padding: 0; background: none; cursor: pointer; }
   #stage { width: min(700px, 90vw); min-height: 220px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 32px 24px; box-sizing: border-box; border: 1px dashed #555; background-image: linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%), linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%); background-size: 24px 24px; background-position: 0 0, 12px 12px; }
   #stage.light { background: #fff; background-image: none; border-style: solid; border-color: #333; }
-  #idle { width: min(280px, 70vw); height: auto; image-rendering: auto; }
-  #preview { font-family: 'OMORI_GAME2 Regular', sans-serif; font-weight: normal; color: #FF5298; font-size: 64px; line-height: 1.4; text-align: center; word-break: break-word; white-space: pre-line; }
+  #idle { max-width: min(280px, 70vw); max-height: 280px; width: auto; height: auto; }
+  #preview { font-family: 'OMORI_GAME2 Regular', 'NanumAmSeuTeReuDam', sans-serif; font-weight: normal; color: #FF5298; font-size: 64px; line-height: 1.5; text-align: center; word-break: break-word; white-space: pre-line; }
   .hoveringLetters { display: inline-block; transform-origin: center; position: relative; animation-name: letter-sway; animation-duration: 5s; animation-timing-function: cubic-bezier(0.37,0,0.63,1); animation-iteration-count: infinite; }
-  .hoverLettersWord { white-space: nowrap; }
+  .hoverLettersWord { white-space: normal; overflow-wrap: anywhere; }
+  .hoveringLetters.kr { filter: url(#roughen); }
   .btnrow { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
-  .btn { padding: 12px 24px; font-size: 20px; font-family: inherit; border-radius: 8px; border: none; background: #FF5298; color: #fff; cursor: pointer; }
-  .btn:hover { filter: brightness(1.1); }
-  .btn:disabled { opacity: 0.5; cursor: wait; }
-  .btn.ghost { background: #333; border: 1px solid #FF5298; }
+  button.gola-btn { width: auto; min-width: 170px; padding: 0 18px; font-family: inherit; }
+  button.gola-btn:disabled { opacity: 0.5; cursor: wait; }
+  .moderow { display: flex; gap: 8px; align-items: center; }
   #msg { margin-top: 8px; font-size: 16px; opacity: 0.7; min-height: 20px; text-align: center; }
 </style>
 </head>
 <body>
 <h1><b>Celestial</b> speech generator</h1>
-<textarea id="text" rows="2" autofocus>YOU SHALL WILT IN THIS DANCE WITH ME.</textarea>
+<textarea id="text" rows="2" autofocus>Hello, World! 안녕하세요, 세상!</textarea>
 <div class="controls">
   <label>Size <input id="size" type="range" min="24" max="200" value="64" /> <span id="sizeVal">64px</span></label>
   <label>Color <input id="color" type="color" value="#FF5298" /></label>
   <label><input id="bgToggle" type="checkbox" /> light background</label>
+  <span class="moderow"><input type="checkbox" class="gola-check" id="martToggle" aria-label="Mart mode" /><label class="gola-switch" for="martToggle"><span class="gola-knob"></span></label><span class="gola-label" id="modeLabel">Celestial</span></span>
 </div>
 <div id="stage"><img id="idle" alt="Celestial idle" /><div id="preview"></div></div>
 <div class="btnrow">
-  <button id="saveGIF" class="btn">Save GIF (animated)</button>
-  <button id="savePNG" class="btn ghost">Save PNG (text only)</button>
+  <button id="saveGIF" class="gola-btn">Save GIF (animated)</button>
+  <button id="savePNG" class="gola-btn">Save PNG (text only)</button>
 </div>
 <div id="msg"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="roughen" x="-20%" y="-20%" width="140%" height="140%">
+      <feMorphology in="SourceGraphic" operator="dilate" radius="0.70" result="w" />
+      <feTurbulence type="turbulence" baseFrequency="0.9" numOctaves="2" seed="7" result="n" />
+      <feDisplacementMap in="w" in2="n" scale="1.41" />
+    </filter>
+    <filter id="roughenExp" x="-20%" y="-20%" width="140%" height="140%">
+      <feMorphology in="SourceGraphic" operator="dilate" radius="0.70" result="w" />
+      <feTurbulence type="turbulence" baseFrequency="0.9" numOctaves="2" seed="7" result="n" />
+      <feDisplacementMap in="w" in2="n" scale="1.41" />
+    </filter>
+  </defs>
+</svg>
 
 <script>
   const text = document.getElementById('text');
@@ -65,8 +84,21 @@
   const saveGIF = document.getElementById('saveGIF');
   const msg = document.getElementById('msg');
   const SCALE = 3;
-  const FONT = '"OMORI_GAME2 Regular", sans-serif';
-  document.getElementById('idle').src = 'data:image/gif;base64,' + window.CELESTIAL_GIF_B64;
+  const FONT = '"OMORI_GAME2 Regular", "NanumAmSeuTeReuDam", sans-serif';
+  const MODES = {
+    celestial: { color: '#FF5298', label: 'Celestial', file: 'celestial' },
+    mart: { color: '#67cee9', label: 'Mart', file: 'mart' }
+  };
+  let mode = 'celestial';
+  const martToggle = document.getElementById('martToggle');
+  const modeLabel = document.getElementById('modeLabel');
+  const idleImg = document.getElementById('idle');
+  function spriteB64() { return mode === 'mart' ? window.MART_GIF_B64 : window.CELESTIAL_GIF_B64; }
+  function setIdle() {
+    idleImg.src = 'data:image/gif;base64,' + spriteB64();
+    idleImg.alt = MODES[mode].label + ' idle';
+  }
+  setIdle();
 
   function renderPreview() {
     const raw = text.value || ' ';
@@ -81,7 +113,7 @@
         w.className = 'hoverLettersWord';
         Array.from(word).forEach((ch, i) => {
           const s = document.createElement('span');
-          s.className = 'hoveringLetters';
+          s.className = 'hoveringLetters' + (isHangeul(ch) ? ' kr' : '');
           s.style.animationDelay = '-' + i + 's';
           s.textContent = ch;
           w.appendChild(s);
@@ -95,12 +127,20 @@
   size.addEventListener('input', () => {
     preview.style.fontSize = size.value + 'px';
     sizeVal.textContent = size.value + 'px';
+    updateRough(parseInt(size.value, 10));
   });
   color.addEventListener('input', () => {
     preview.style.color = color.value;
   });
   bgToggle.addEventListener('change', () => {
     stage.classList.toggle('light', bgToggle.checked);
+  });
+  martToggle.addEventListener('change', () => {
+    mode = martToggle.checked ? 'mart' : 'celestial';
+    setIdle();
+    color.value = MODES[mode].color;
+    preview.style.color = MODES[mode].color;
+    modeLabel.textContent = MODES[mode].label;
   });
   renderPreview();
 
@@ -116,6 +156,26 @@
     return first.replace(/[\\/:*?"<>|]/g, '');
   }
   const tick = () => new Promise(r => setTimeout(r, 0));
+  function isHangeul(ch) {
+    const c = ch.codePointAt(0);
+    return (c >= 0x1100 && c <= 0x11FF) ||
+           (c >= 0x3130 && c <= 0x318F) ||
+           (c >= 0xAC00 && c <= 0xD7A3) ||
+           (c >= 0xFFA0 && c <= 0xFFDC);
+  }
+  const roughenMap = document.querySelector('#roughen feDisplacementMap');
+  const roughenMorph = document.querySelector('#roughen feMorphology');
+  const roughenExpMap = document.querySelector('#roughenExp feDisplacementMap');
+  const roughenExpMorph = document.querySelector('#roughenExp feMorphology');
+  function updateRough(px) {
+    if (roughenMap) roughenMap.setAttribute('scale', (px * 0.022).toFixed(2));
+    if (roughenMorph) roughenMorph.setAttribute('radius', (px * 0.011).toFixed(3));
+  }
+  function updateRoughExp(px) {
+    if (roughenExpMap) roughenExpMap.setAttribute('scale', (px * 0.022).toFixed(2));
+    if (roughenExpMorph) roughenExpMorph.setAttribute('radius', (px * 0.011).toFixed(3));
+  }
+  updateRough(parseInt(size.value, 10));
 
   savePNG.addEventListener('click', async () => {
     const raw = text.value || ' ';
@@ -126,10 +186,11 @@
     msg.textContent = 'Loading font...';
     try {
       await document.fonts.load(fontSize + 'px "OMORI_GAME2 Regular"');
+      await document.fonts.load(fontSize + 'px "NanumAmSeuTeReuDam"', '한');
       await document.fonts.ready;
     } catch (e) {}
 
-    const lineHeight = fontSize * 1.4;
+    const lineHeight = fontSize * 1.5;
     const pad = Math.ceil(fontSize * 0.4);
     const meas = document.createElement('canvas').getContext('2d');
     meas.font = (fontSize * SCALE) + 'px ' + FONT;
@@ -141,15 +202,30 @@
     const canvas = document.createElement('canvas');
     canvas.width = Math.ceil(maxW + pad * 2 * SCALE);
     canvas.height = Math.ceil(lineHeight * lines.length * SCALE + pad * 2 * SCALE);
+    const krCanvas = document.createElement('canvas');
+    krCanvas.width = canvas.width;
+    krCanvas.height = canvas.height;
     const ctx = canvas.getContext('2d');
-    ctx.font = (fontSize * SCALE) + 'px ' + FONT;
-    ctx.fillStyle = fontColor;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    const krCtx = krCanvas.getContext('2d');
+    for (const c of [ctx, krCtx]) {
+      c.font = (fontSize * SCALE) + 'px ' + FONT;
+      c.fillStyle = fontColor;
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+    }
+    updateRoughExp(fontSize * SCALE);
     lines.forEach((line, i) => {
       const y = pad * SCALE + lineHeight * SCALE * i + (lineHeight * SCALE) / 2;
-      ctx.fillText(line || ' ', canvas.width / 2, y);
+      const lay = layoutLine(line || ' ', meas);
+      const x0 = canvas.width / 2 - lay.width / 2;
+      for (const c of lay.chars) {
+        (isHangeul(c.ch) ? krCtx : ctx).fillText(c.ch, x0 + c.cx, y);
+      }
     });
+    ctx.save();
+    ctx.filter = 'url(#roughenExp)';
+    ctx.drawImage(krCanvas, 0, 0);
+    ctx.restore();
     canvas.toBlob((blob) => {
       savePNG.disabled = false;
       if (!blob) { msg.textContent = 'Save failed, try again.'; return; }
@@ -235,20 +311,23 @@
     return { chars, width: x };
   }
 
-  function drawSwayText(ctx, layouts, tSec, fontSize, cx, top, lineHeight) {
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+  function drawSwayText(ctx, krCtx, layouts, tSec, fontSize, cx, top, lineHeight) {
+    for (const c of [ctx, krCtx]) {
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+    }
     layouts.forEach((lay, li) => {
       const cy = top + li * lineHeight + lineHeight / 2;
       const x0 = cx - lay.width / 2;
       for (const c of lay.chars) {
         const p = ((((tSec + c.wi) % SWAY_PERIOD) + SWAY_PERIOD) % SWAY_PERIOD) / SWAY_PERIOD;
         const off = swayAt(p);
-        ctx.save();
-        ctx.translate(x0 + c.cx, cy + off[0] / 100 * fontSize);
-        ctx.rotate(off[1] * Math.PI / 180);
-        ctx.fillText(c.ch, 0, 0);
-        ctx.restore();
+        const t = isHangeul(c.ch) ? krCtx : ctx;
+        t.save();
+        t.translate(x0 + c.cx, cy + off[0] / 100 * fontSize);
+        t.rotate(off[1] * Math.PI / 180);
+        t.fillText(c.ch, 0, 0);
+        t.restore();
       }
     });
   }
@@ -259,7 +338,9 @@
     try {
       msg.textContent = 'Decoding sprite...';
       await tick();
-      const bin = atob(window.CELESTIAL_GIF_B64);
+      const b64 = spriteB64();
+      if (!b64) throw new Error(MODES[mode].label + ' sprite missing (gif-data file failed to load?)');
+      const bin = atob(b64);
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
       const reader = new GifReader(bytes);
@@ -280,25 +361,34 @@
       const fontColor = color.value;
       try {
         await document.fonts.load(fontSize + 'px "OMORI_GAME2 Regular"');
+        await document.fonts.load(fontSize + 'px "NanumAmSeuTeReuDam"', '한');
         await document.fonts.ready;
       } catch (e) {}
       const meas = document.createElement('canvas').getContext('2d');
       meas.font = fontSize + 'px ' + FONT;
-      const lines = wrapLines(text.value || ' ', meas, gw);
+      const contentW = Math.max(gw, 480);
+      const lines = wrapLines(text.value || ' ', meas, contentW);
       const layouts = lines.map(l => layoutLine(l, meas));
-      const lineHeight = fontSize * 1.4;
+      const lineHeight = fontSize * 1.5;
       const gap = Math.round(fontSize * 0.4);
       const pad = 24;
-      const W = gw + pad * 2;
+      const W = contentW + pad * 2;
       const H = Math.ceil(pad + gh + gap + lineHeight * lines.length + pad);
       const textCX = W / 2, textTop = pad + gh + gap;
 
       const canvas = document.createElement('canvas');
       canvas.width = W;
       canvas.height = H;
+      const krCanvas = document.createElement('canvas');
+      krCanvas.width = W;
+      krCanvas.height = H;
       const ctx = canvas.getContext('2d');
+      const krCtx = krCanvas.getContext('2d');
       ctx.font = fontSize + 'px ' + FONT;
       ctx.fillStyle = fontColor;
+      krCtx.font = fontSize + 'px ' + FONT;
+      krCtx.fillStyle = fontColor;
+      updateRoughExp(fontSize);
       const totalFrames = nf * loops;
       const frameTimes = [];
       const frameDelays = [];
@@ -310,8 +400,13 @@
       }
       function renderFrame(f) {
         ctx.clearRect(0, 0, W, H);
-        ctx.putImageData(sprites[f % nf], pad, pad);
-        drawSwayText(ctx, layouts, frameTimes[f] / 1000, fontSize, textCX, textTop, lineHeight);
+        krCtx.clearRect(0, 0, W, H);
+        ctx.putImageData(sprites[f % nf], Math.round((W - gw) / 2), pad);
+        drawSwayText(ctx, krCtx, layouts, frameTimes[f] / 1000, fontSize, textCX, textTop, lineHeight);
+        ctx.save();
+        ctx.filter = 'url(#roughenExp)';
+        ctx.drawImage(krCanvas, 0, 0);
+        ctx.restore();
         return ctx.getImageData(0, 0, W, H).data;
       }
 
@@ -348,7 +443,7 @@
       }
       enc.finish();
       const blob = new Blob([enc.bytes()], { type: 'image/gif' });
-      download(blob, fileStem() + '-celestial.gif');
+      download(blob, fileStem() + '-' + MODES[mode].file + '.gif');
       msg.textContent = 'Saved! (' + W + 'x' + H + ', ' + totalFrames + ' frames, ' + (blob.size / 1048576).toFixed(1) + 'MB)';
     } catch (err) {
       msg.textContent = 'GIF failed: ' + (err && err.message ? err.message : err);
