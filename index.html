@@ -30,7 +30,7 @@
   input[type="color"] { width: 36px; height: 24px; border: none; padding: 0; background: none; cursor: pointer; }
   #stage { width: min(700px, 90vw); min-height: 220px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 32px 24px; box-sizing: border-box; border: 1px dashed #555; background-image: linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%), linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%); background-size: 24px 24px; background-position: 0 0, 12px 12px; }
   #stage.light { background: #fff; background-image: none; border-style: solid; border-color: #333; }
-  #idle { max-width: min(280px, 70vw); max-height: 280px; width: auto; height: auto; }
+  #idle { max-width: 100%; height: auto; }
   #preview { font-family: 'OMORI_GAME2 Regular', 'NanumAmSeuTeReuDam', sans-serif; font-weight: normal; color: #FF5298; font-size: 64px; line-height: 1.5; text-align: center; word-break: break-word; white-space: pre-line; }
   .hoveringLetters { display: inline-block; transform-origin: center; position: relative; animation-name: letter-sway; animation-duration: 5s; animation-timing-function: cubic-bezier(0.37,0,0.63,1); animation-iteration-count: infinite; }
   .hoverLettersWord { white-space: normal; overflow-wrap: anywhere; }
@@ -54,6 +54,8 @@
   <label>Color <input id="color" type="color" value="#FF5298" /></label>
   <label><input id="bgToggle" type="checkbox" /> light background</label>
   <span class="moderow"><input type="checkbox" class="gola-check" id="martToggle" aria-label="Mart mode" /><label class="gola-switch" for="martToggle"><span class="gola-knob"></span></label><span class="gola-label" id="modeLabel">Celestial</span></span>
+  <label>Width <input id="textWidth" type="range" min="200" max="1200" value="650" /> <span id="textWidthVal">650px</span></label>
+  <label>Sprite <input id="spriteSize" type="range" min="120" max="650" value="280" /> <span id="spriteSizeVal">280px</span></label>
 </div>
 <div id="stage"><img id="idle" alt="Celestial idle" /><div id="preview"></div></div>
 <div class="btnrow">
@@ -81,6 +83,10 @@
   const preview = document.getElementById('preview');
   const size = document.getElementById('size');
   const sizeVal = document.getElementById('sizeVal');
+  const textWidth = document.getElementById('textWidth');
+  const textWidthVal = document.getElementById('textWidthVal');
+  const spriteSize = document.getElementById('spriteSize');
+  const spriteSizeVal = document.getElementById('spriteSizeVal');
   const color = document.getElementById('color');
   const stage = document.getElementById('stage');
   const bgToggle = document.getElementById('bgToggle');
@@ -101,7 +107,15 @@
   function setIdle() {
     idleImg.src = 'data:image/gif;base64,' + spriteB64();
     idleImg.alt = MODES[mode].label + ' idle';
-    idleImg.style.width = mode === 'mart' ? '260px' : '';
+    applySpriteSize();
+  }
+  function applySpriteSize() {
+    idleImg.style.width = spriteSize.value + 'px';
+    spriteSizeVal.textContent = spriteSize.value + 'px';
+  }
+  function applyTextWidth() {
+    preview.style.maxWidth = textWidth.value + 'px';
+    textWidthVal.textContent = textWidth.value + 'px';
   }
   setIdle();
 
@@ -147,6 +161,8 @@
     preview.style.color = MODES[mode].color;
     modeLabel.textContent = MODES[mode].label;
   });
+  textWidth.addEventListener('input', applyTextWidth);
+  spriteSize.addEventListener('input', applySpriteSize);
   try {
     if (new URLSearchParams(location.search).get('mode') === 'mart') {
       martToggle.checked = true;
@@ -154,6 +170,7 @@
     }
   } catch (e) {}
   renderPreview();
+  applyTextWidth();
 
   function download(blob, filename) {
     const a = document.createElement('a');
@@ -190,7 +207,6 @@
 
   savePNG.addEventListener('click', async () => {
     const raw = text.value || ' ';
-    const lines = raw.split('\n');
     const fontSize = parseInt(size.value, 10);
     const fontColor = color.value;
     savePNG.disabled = true;
@@ -205,6 +221,7 @@
     const pad = Math.ceil(fontSize * 0.4);
     const meas = document.createElement('canvas').getContext('2d');
     meas.font = (fontSize * SCALE) + 'px ' + FONT;
+    const lines = wrapLines(raw, meas, parseInt(textWidth.value, 10) * SCALE);
     let maxW = 0;
     for (const line of lines) {
       const w = meas.measureText(line || ' ').width;
@@ -367,6 +384,12 @@
         reader.decodeAndBlitFrameRGBA(i, px);
         sprites.push(new ImageData(px, gw, gh));
       }
+      const spriteCanvases = sprites.map(img => {
+        const c = document.createElement('canvas');
+        c.width = gw; c.height = gh;
+        c.getContext('2d').putImageData(img, 0, 0);
+        return c;
+      });
 
       const fontSize = parseInt(size.value, 10);
       const fontColor = color.value;
@@ -377,15 +400,19 @@
       } catch (e) {}
       const meas = document.createElement('canvas').getContext('2d');
       meas.font = fontSize + 'px ' + FONT;
-      const contentW = Math.max(gw, 480);
-      const lines = wrapLines(text.value || ' ', meas, contentW);
+      const spritePx = parseInt(spriteSize.value, 10);
+      const spriteW = spritePx;
+      const spriteH = Math.round(gh * spritePx / gw);
+      const textWrapW = parseInt(textWidth.value, 10);
+      const lines = wrapLines(text.value || ' ', meas, textWrapW);
       const layouts = lines.map(l => layoutLine(l, meas));
       const lineHeight = fontSize * 1.5;
       const gap = Math.round(fontSize * 0.4);
       const pad = 24;
-      const W = contentW + pad * 2;
-      const H = Math.ceil(pad + gh + gap + lineHeight * lines.length + pad);
-      const textCX = W / 2, textTop = pad + gh + gap;
+      const W = Math.max(spriteW, textWrapW) + pad * 2;
+      const H = Math.ceil(pad + spriteH + gap + lineHeight * lines.length + pad);
+      const textCX = W / 2, textTop = pad + spriteH + gap;
+      const spriteX = Math.round((W - spriteW) / 2);
 
       const canvas = document.createElement('canvas');
       canvas.width = W;
@@ -412,7 +439,7 @@
       function renderFrame(f) {
         ctx.clearRect(0, 0, W, H);
         krCtx.clearRect(0, 0, W, H);
-        ctx.putImageData(sprites[f % nf], Math.round((W - gw) / 2), pad);
+        ctx.drawImage(spriteCanvases[f % nf], spriteX, pad, spriteW, spriteH);
         drawSwayText(ctx, krCtx, layouts, frameTimes[f] / 1000, fontSize, textCX, textTop, lineHeight);
         ctx.save();
         ctx.filter = 'url(#roughenExp)';
