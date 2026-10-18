@@ -95,8 +95,8 @@
   const FONT = '"OMORI_GAME2 Regular", "NanumAmSeuTeReuDam", sans-serif';
   const MODES = {
     celestial: { color: '#FF5298', label: 'Celestial', file: 'celestial' },
-    mart: { color: '#67cee9', label: 'Mart', file: 'mart' },
-    celedeath: { color: '#FFFFFF', label: 'Celedeath', file: 'celedeath', static: true }
+    mart: { color: '#67cee9', label: 'Mart', file: 'mart', sway: true },
+    celedeath: { color: '#FFFFFF', label: 'Celedeath', file: 'celedeath', static: true, sway: true }
   };
   let mode = 'celestial';
   const modeRadios = [...document.querySelectorAll('input[name="mode"]')];
@@ -109,7 +109,7 @@
   function setMode(m) {
     if (!MODES[m]) return;
     mode = m;
-    idleImg.classList.toggle('sway', m === 'celedeath');
+    idleImg.classList.toggle('sway', !!MODES[m].sway);
     setIdle();
     color.value = MODES[mode].color;
     preview.style.color = MODES[mode].color;
@@ -434,8 +434,17 @@
       }
       const loopMs = delays.reduce((a, b) => a + b, 0);
       let loops = 1;
-      if (MODES[mode].static) loops = 100;
-      else while (((loops * loopMs) % 5000) > 1 && loops < 8) loops++;
+      if (MODES[mode].static) {
+        loops = 100;
+      } else {
+        let best = Infinity;
+        for (let k = 1; k <= 8; k++) {
+          const r = (k * loopMs) % 5000;
+          const d = Math.min(r, 5000 - r);
+          if (d < best) { best = d; loops = k; }
+          if (best <= 1) break;
+        }
+      }
       const spriteCanvases = sprites.map(img => {
         const c = document.createElement('canvas');
         c.width = gw; c.height = gh;
@@ -488,7 +497,7 @@
         frameDelays.push(delays[f % nf]);
         t += delays[f % nf];
       }
-      const swaySprite = !!MODES[mode].static;
+      const swaySprite = !!MODES[mode].sway;
       function renderFrame(f) {
         ctx.clearRect(0, 0, W, H);
         krCtx.clearRect(0, 0, W, H);
