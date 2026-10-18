@@ -142,6 +142,12 @@
     preview.style.color = MODES[mode].color;
     modeLabel.textContent = MODES[mode].label;
   });
+  try {
+    if (new URLSearchParams(location.search).get('mode') === 'mart') {
+      martToggle.checked = true;
+      martToggle.dispatchEvent(new Event('change'));
+    }
+  } catch (e) {}
   renderPreview();
 
   function download(blob, filename) {

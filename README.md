@@ -1,5 +1,5 @@
 # [Celestial speech generator](https://muffler-2597.github.io/Celestial-speech-generator/)
-![테스트 이미지](test.png)
+<img src="test.png" width="380"> <img src="test-mart.png" width="380">
 
 글쎄요. 저도 이게 뭔지도 모르겠습니다. 영어 + 한글 지원합니다.
 
@@ -10,6 +10,10 @@
 - 폰트 (오모리)
 
 링크 : https://muffler-2597.github.io/Celestial-speech-generator/
+
+## GolaCSS 연동
+
+UI 스킨은 [GolaCSS](https://github.com/Muffler-2597/GolaCSS)를 CDN(`@master`)으로 직접 땡겨 씁니다. 파일 없음. GolaCSS 리포가 업데이트되면 따라서 바뀝니다. 저장 버튼 + 마트 토글에 쓰는 중. 폰트는 오모리+암스테르담으로 강제 고정 (Gola 리셋 씹음).
 
 ---
 ## Credits / 출처 (법적 고지)
