@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Celestial speech generator</title>
+<link rel="stylesheet" type="text/css" href="style.css" />
+<script src="omggif.js"></script>
+<script src="gifenc-bundle.js"></script>
+<script src="gif-data.js"></script>
+<style>
+  @keyframes letter-sway {
+    0% { transform: translateY(3%) rotate(-5deg); }
+    25% { transform: translateY(-3%); }
+    50% { transform: translateY(3%) rotate(5deg); }
+    75% { transform: translateY(-3%); }
+    100% { transform: translateY(3%) rotate(-5deg); }
+  }
+  body { margin: 0; font-family: 'OMORI_GAME2 Regular', sans-serif; background: #111; color: #eee; display: flex; flex-direction: column; align-items: center; padding: 32px 16px; min-height: 100vh; box-sizing: border-box; }
+  h1 { font-size: 28px; font-weight: normal; opacity: 0.9; }
+  h1 b { color: #FF5298; }
+  #text { width: min(700px, 90vw); padding: 12px 16px; font-size: 20px; font-family: inherit; border-radius: 8px; border: 2px solid #FF5298; background: #000; color: #fff; outline: none; resize: vertical; }
+  .controls { display: flex; gap: 16px; align-items: center; margin: 16px 0; font-size: 18px; flex-wrap: wrap; justify-content: center; }
+  .controls label { display: flex; gap: 8px; align-items: center; }
+  input[type="range"] { accent-color: #FF5298; }
+  input[type="color"] { width: 36px; height: 24px; border: none; padding: 0; background: none; cursor: pointer; }
+  #stage { width: min(700px, 90vw); min-height: 220px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 32px 24px; box-sizing: border-box; border: 1px dashed #555; background-image: linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%), linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%); background-size: 24px 24px; background-position: 0 0, 12px 12px; }
+  #stage.light { background: #fff; background-image: none; border-style: solid; border-color: #333; }
+  #idle { width: min(280px, 70vw); height: auto; image-rendering: auto; }
+  #preview { font-family: 'OMORI_GAME2 Regular', sans-serif; font-weight: normal; color: #FF5298; font-size: 64px; line-height: 1.4; text-align: center; word-break: break-word; white-space: pre-line; }
+  .hoveringLetters { display: inline-block; transform-origin: center; position: relative; animation-name: letter-sway; animation-duration: 5s; animation-timing-function: cubic-bezier(0.37,0,0.63,1); animation-iteration-count: infinite; }
+  .hoverLettersWord { white-space: nowrap; }
+  .btnrow { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
+  .btn { padding: 12px 24px; font-size: 20px; font-family: inherit; border-radius: 8px; border: none; background: #FF5298; color: #fff; cursor: pointer; }
+  .btn:hover { filter: brightness(1.1); }
+  .btn:disabled { opacity: 0.5; cursor: wait; }
+  .btn.ghost { background: #333; border: 1px solid #FF5298; }
+  #msg { margin-top: 8px; font-size: 16px; opacity: 0.7; min-height: 20px; text-align: center; }
+</style>
+</head>
+<body>
+<h1><b>Celestial</b> speech generator</h1>
+<textarea id="text" rows="2" autofocus>YOU SHALL WILT IN THIS DANCE WITH ME.</textarea>
+<div class="controls">
+  <label>Size <input id="size" type="range" min="24" max="200" value="64" /> <span id="sizeVal">64px</span></label>
+  <label>Color <input id="color" type="color" value="#FF5298" /></label>
+  <label><input id="bgToggle" type="checkbox" /> light background</label>
+</div>
+<div id="stage"><img id="idle" alt="Celestial idle" /><div id="preview"></div></div>
+<div class="btnrow">
+  <button id="saveGIF" class="btn">Save GIF (animated)</button>
+  <button id="savePNG" class="btn ghost">Save PNG (text only)</button>
+</div>
+<div id="msg"></div>
+
+<script>
+  const text = document.getElementById('text');
+  const preview = document.getElementById('preview');
+  const size = document.getElementById('size');
+  const sizeVal = document.getElementById('sizeVal');
+  const color = document.getElementById('color');
+  const stage = document.getElementById('stage');
+  const bgToggle = document.getElementById('bgToggle');
+  const savePNG = document.getElementById('savePNG');
+  const saveGIF = document.getElementById('saveGIF');
+  const msg = document.getElementById('msg');
+  const SCALE = 3;
+  const FONT = '"OMORI_GAME2 Regular", sans-serif';
+  document.getElementById('idle').src = 'data:image/gif;base64,' + window.CELESTIAL_GIF_B64;
+
+  function renderPreview() {
+    const raw = text.value || ' ';
+    preview.replaceChildren();
+    raw.split('\n').forEach((line, li) => {
+      if (li > 0) preview.appendChild(document.createElement('br'));
+      if (!line) return;
+      line.split(' ').forEach((word, wi) => {
+        if (wi > 0) preview.appendChild(document.createTextNode(' '));
+        if (!word) return;
+        const w = document.createElement('span');
+        w.className = 'hoverLettersWord';
+        Array.from(word).forEach((ch, i) => {
+          const s = document.createElement('span');
+          s.className = 'hoveringLetters';
+          s.style.animationDelay = '-' + i + 's';
+          s.textContent = ch;
+          w.appendChild(s);
+        });
+        preview.appendChild(w);
+      });
+    });
+  }
+
+  text.addEventListener('input', renderPreview);
+  size.addEventListener('input', () => {
+    preview.style.fontSize = size.value + 'px';
+    sizeVal.textContent = size.value + 'px';
+  });
+  color.addEventListener('input', () => {
+    preview.style.color = color.value;
+  });
+  bgToggle.addEventListener('change', () => {
+    stage.classList.toggle('light', bgToggle.checked);
+  });
+  renderPreview();
+
+  function download(blob, filename) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }
+  function fileStem() {
+    const first = (text.value || '').split('\n')[0].trim().slice(0, 12) || 'celestial';
+    return first.replace(/[\\/:*?"<>|]/g, '');
+  }
+  const tick = () => new Promise(r => setTimeout(r, 0));
+
+  savePNG.addEventListener('click', async () => {
+    const raw = text.value || ' ';
+    const lines = raw.split('\n');
+    const fontSize = parseInt(size.value, 10);
+    const fontColor = color.value;
+    savePNG.disabled = true;
+    msg.textContent = 'Loading font...';
+    try {
+      await document.fonts.load(fontSize + 'px "OMORI_GAME2 Regular"');
+      await document.fonts.ready;
+    } catch (e) {}
+
+    const lineHeight = fontSize * 1.4;
+    const pad = Math.ceil(fontSize * 0.4);
+    const meas = document.createElement('canvas').getContext('2d');
+    meas.font = (fontSize * SCALE) + 'px ' + FONT;
+    let maxW = 0;
+    for (const line of lines) {
+      const w = meas.measureText(line || ' ').width;
+      if (w > maxW) maxW = w;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(maxW + pad * 2 * SCALE);
+    canvas.height = Math.ceil(lineHeight * lines.length * SCALE + pad * 2 * SCALE);
+    const ctx = canvas.getContext('2d');
+    ctx.font = (fontSize * SCALE) + 'px ' + FONT;
+    ctx.fillStyle = fontColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    lines.forEach((line, i) => {
+      const y = pad * SCALE + lineHeight * SCALE * i + (lineHeight * SCALE) / 2;
+      ctx.fillText(line || ' ', canvas.width / 2, y);
+    });
+    canvas.toBlob((blob) => {
+      savePNG.disabled = false;
+      if (!blob) { msg.textContent = 'Save failed, try again.'; return; }
+      download(blob, fileStem() + '-transparent.png');
+      msg.textContent = 'Saved! (' + canvas.width + 'x' + canvas.height + ', transparent)';
+    }, 'image/png');
+  });
+
+  function cubicBezier(x1, y1, x2, y2) {
+    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    const sx = t => ((ax * t + bx) * t + cx) * t;
+    const sy = t => ((ay * t + by) * t + cy) * t;
+    const dx = t => (3 * ax * t + 2 * bx) * t + cx;
+    return function (x) {
+      let t = x;
+      for (let i = 0; i < 5; i++) {
+        const err = sx(t) - x;
+        if (Math.abs(err) < 1e-4) return sy(t);
+        const d = dx(t);
+        if (Math.abs(d) < 1e-6) break;
+        t -= err / d;
+      }
+      let lo = 0, hi = 1;
+      t = x;
+      while (hi - lo > 1e-4) {
+        if (sx(t) < x) lo = t; else hi = t;
+        t = (lo + hi) / 2;
+      }
+      return sy(t);
+    };
+  }
+  const easeSway = cubicBezier(0.37, 0, 0.63, 1);
+  const SWAY_KF = [[0, 3, -5], [0.25, -3, 0], [0.5, 3, 5], [0.75, -3, 0], [1, 3, -5]];
+  const SWAY_PERIOD = 5;
+  function swayAt(p) {
+    for (let k = 0; k < SWAY_KF.length - 1; k++) {
+      const a = SWAY_KF[k], b = SWAY_KF[k + 1];
+      if (p <= b[0] || k === SWAY_KF.length - 2) {
+        const t = p <= a[0] ? 0 : (p - a[0]) / (b[0] - a[0]);
+        const e = easeSway(Math.min(1, Math.max(0, t)));
+        return [a[1] + (b[1] - a[1]) * e, a[2] + (b[2] - a[2]) * e];
+      }
+    }
+  }
+
+  function wrapLines(raw, ctx, maxW) {
+    const out = [];
+    for (const para of raw.split('\n')) {
+      const words = para.split(' ').filter(w => w.length);
+      if (!words.length) { out.push(''); continue; }
+      let line = '';
+      const pushWord = (w) => {
+        while (ctx.measureText(w).width > maxW && w.length > 1) {
+          let cut = w.length - 1;
+          while (cut > 1 && ctx.measureText(w.slice(0, cut)).width > maxW) cut--;
+          if (line) { out.push(line); line = ''; }
+          out.push(w.slice(0, cut));
+          w = w.slice(cut);
+        }
+        const trial = line ? line + ' ' + w : w;
+        if (ctx.measureText(trial).width > maxW && line) { out.push(line); line = w; }
+        else line = trial;
+      };
+      words.forEach(pushWord);
+      out.push(line);
+    }
+    return out;
+  }
+
+  function layoutLine(line, ctx) {
+    const spaceW = ctx.measureText(' ').width;
+    const chars = [];
+    let x = 0;
+    line.split(' ').forEach((word, wpos) => {
+      if (wpos > 0) x += spaceW;
+      Array.from(word).forEach((ch, wi) => {
+        const w = ctx.measureText(ch).width;
+        chars.push({ ch, cx: x + w / 2, wi });
+        x += w;
+      });
+    });
+    return { chars, width: x };
+  }
+
+  function drawSwayText(ctx, layouts, tSec, fontSize, cx, top, lineHeight) {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    layouts.forEach((lay, li) => {
+      const cy = top + li * lineHeight + lineHeight / 2;
+      const x0 = cx - lay.width / 2;
+      for (const c of lay.chars) {
+        const p = ((((tSec + c.wi) % SWAY_PERIOD) + SWAY_PERIOD) % SWAY_PERIOD) / SWAY_PERIOD;
+        const off = swayAt(p);
+        ctx.save();
+        ctx.translate(x0 + c.cx, cy + off[0] / 100 * fontSize);
+        ctx.rotate(off[1] * Math.PI / 180);
+        ctx.fillText(c.ch, 0, 0);
+        ctx.restore();
+      }
+    });
+  }
+
+  saveGIF.addEventListener('click', async () => {
+    saveGIF.disabled = true;
+    savePNG.disabled = true;
+    try {
+      msg.textContent = 'Decoding sprite...';
+      await tick();
+      const bin = atob(window.CELESTIAL_GIF_B64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const reader = new GifReader(bytes);
+      const gw = reader.width, gh = reader.height, nf = reader.numFrames();
+      const delays = [];
+      for (let i = 0; i < nf; i++) delays.push(Math.max(20, reader.frameInfo(i).delay * 10));
+      const loopMs = delays.reduce((a, b) => a + b, 0);
+      let loops = 1;
+      while (((loops * loopMs) % 5000) > 1 && loops < 8) loops++;
+      const sprites = [];
+      for (let i = 0; i < nf; i++) {
+        const px = new Uint8ClampedArray(gw * gh * 4);
+        reader.decodeAndBlitFrameRGBA(i, px);
+        sprites.push(new ImageData(px, gw, gh));
+      }
+
+      const fontSize = parseInt(size.value, 10);
+      const fontColor = color.value;
+      try {
+        await document.fonts.load(fontSize + 'px "OMORI_GAME2 Regular"');
+        await document.fonts.ready;
+      } catch (e) {}
+      const meas = document.createElement('canvas').getContext('2d');
+      meas.font = fontSize + 'px ' + FONT;
+      const lines = wrapLines(text.value || ' ', meas, gw);
+      const layouts = lines.map(l => layoutLine(l, meas));
+      const lineHeight = fontSize * 1.4;
+      const gap = Math.round(fontSize * 0.4);
+      const pad = 24;
+      const W = gw + pad * 2;
+      const H = Math.ceil(pad + gh + gap + lineHeight * lines.length + pad);
+      const textCX = W / 2, textTop = pad + gh + gap;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      ctx.font = fontSize + 'px ' + FONT;
+      ctx.fillStyle = fontColor;
+      const totalFrames = nf * loops;
+      const frameTimes = [];
+      const frameDelays = [];
+      let t = 0;
+      for (let f = 0; f < totalFrames; f++) {
+        frameTimes.push(t);
+        frameDelays.push(delays[f % nf]);
+        t += delays[f % nf];
+      }
+      function renderFrame(f) {
+        ctx.clearRect(0, 0, W, H);
+        ctx.putImageData(sprites[f % nf], pad, pad);
+        drawSwayText(ctx, layouts, frameTimes[f] / 1000, fontSize, textCX, textTop, lineHeight);
+        return ctx.getImageData(0, 0, W, H).data;
+      }
+
+      msg.textContent = 'Sampling colors...';
+      await tick();
+      const pxCount = W * H;
+      const perFrame = Math.ceil(pxCount / 16);
+      const combined = new Uint8Array(perFrame * totalFrames * 4);
+      let o = 0;
+      for (let f = 0; f < totalFrames; f++) {
+        if (f % 20 === 0) { msg.textContent = 'Rendering ' + f + '/' + totalFrames + '...'; await tick(); }
+        const rgba = renderFrame(f);
+        for (let p = 0; p < pxCount; p += 16) {
+          combined[o++] = rgba[p * 4];
+          combined[o++] = rgba[p * 4 + 1];
+          combined[o++] = rgba[p * 4 + 2];
+          combined[o++] = rgba[p * 4 + 3];
+        }
+      }
+      msg.textContent = 'Quantizing colors...';
+      await tick();
+      const palette255 = window.Gifenc.quantize(combined.subarray(0, o), 255);
+      const palette = [[0, 0, 0]].concat(palette255);
+
+      msg.textContent = 'Encoding GIF...';
+      await tick();
+      const enc = window.Gifenc.GIFEncoder();
+      for (let f = 0; f < totalFrames; f++) {
+        if (f % 10 === 0) { msg.textContent = 'Encoding ' + f + '/' + totalFrames + '...'; await tick(); }
+        const rgba = renderFrame(f);
+        const idx = window.Gifenc.applyPalette(rgba, palette255);
+        for (let p = 0; p < idx.length; p++) idx[p] = rgba[p * 4 + 3] < 128 ? 0 : idx[p] + 1;
+        enc.writeFrame(idx, W, H, { palette: f === 0 ? palette : null, delay: frameDelays[f], transparent: true });
+      }
+      enc.finish();
+      const blob = new Blob([enc.bytes()], { type: 'image/gif' });
+      download(blob, fileStem() + '-celestial.gif');
+      msg.textContent = 'Saved! (' + W + 'x' + H + ', ' + totalFrames + ' frames, ' + (blob.size / 1048576).toFixed(1) + 'MB)';
+    } catch (err) {
+      msg.textContent = 'GIF failed: ' + (err && err.message ? err.message : err);
+    }
+    saveGIF.disabled = false;
+    savePNG.disabled = false;
+  });
+</script>
+</body>
+</html>
